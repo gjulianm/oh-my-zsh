@@ -26,7 +26,7 @@
 # A few utility functions to make it easy and re-usable to draw segmented prompts
  
 CURRENT_BG='NONE'
-SEGMENT_SEPARATOR='⮀'
+SEGMENT_SEPARATOR='%1{⮀%}'
  
 # Begin a segment
 # Takes two arguments, background and foreground. Both can be omitted,
@@ -73,16 +73,18 @@ prompt_git() {
   if $(git rev-parse --is-inside-work-tree >/dev/null 2>&1); then
     ZSH_THEME_GIT_PROMPT_DIRTY=' ±'
     dirty=$(parse_git_dirty)
+    
     gstatus=$(/usr/bin/git status -uno)
     if echo $gstatus | grep ahead &>/dev/null; then
-      rstat=" ⤴︎"
+      rstat="%1{⤴︎%}"
     elif echo $gstatus | grep behind &> /dev/null; then
-      rstat=" ⤵︎"
+      rstat="%1{⤵︎%}"
     elif echo $gstatus | grep diverged &> /dev/null; then
-      rstat=" ⤮"
+      rstat="%1{⤮%}"
     else
       rstat=""
     fi
+
     ref=$(git symbolic-ref HEAD 2> /dev/null) || ref="➦ $(git show-ref --head -s --abbrev |head -n1 2> /dev/null)"
     if [[ -n $dirty ]]; then
       prompt_segment yellow black
@@ -96,12 +98,12 @@ prompt_git() {
     zstyle ':vcs_info:*' enable git
     zstyle ':vcs_info:*' get-revision true
     zstyle ':vcs_info:*' check-for-changes true
-    zstyle ':vcs_info:*' stagedstr '✚'
+    zstyle ':vcs_info:*' stagedstr '✢'
     zstyle ':vcs_info:git:*' unstagedstr '●'
     zstyle ':vcs_info:*' formats ' %u%c'
     zstyle ':vcs_info:*' actionformats '%u%c'
     vcs_info
-    echo -n "${ref/refs\/heads\//⭠ }$rstat${vcs_info_msg_0_}"
+    echo -n "${ref/refs\/heads\//⭠ } $rstat${vcs_info_msg_0_}"
   fi
 }
 
