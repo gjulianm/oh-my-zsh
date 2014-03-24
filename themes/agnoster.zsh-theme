@@ -21,13 +21,13 @@
 # hostname to whether the last call exited with an error to whether background
 # jobs are running in this shell will all be displayed automatically when
 # appropriate.
-
+ 
 ### Segment drawing
 # A few utility functions to make it easy and re-usable to draw segmented prompts
-
+ 
 CURRENT_BG='NONE'
-SEGMENT_SEPARATOR=''
-
+SEGMENT_SEPARATOR='%1{⮀%}'
+ 
 # Begin a segment
 # Takes two arguments, background and foreground. Both can be omitted,
 # rendering default background/foreground.
@@ -43,7 +43,7 @@ prompt_segment() {
   CURRENT_BG=$1
   [[ -n $3 ]] && echo -n $3
 }
-
+ 
 # End the prompt, closing any open segments
 prompt_end() {
   if [[ -n $CURRENT_BG ]]; then
@@ -54,24 +54,37 @@ prompt_end() {
   echo -n "%{%f%}"
   CURRENT_BG=''
 }
-
+ 
 ### Prompt components
 # Each component will draw itself, and hide itself if no information needs to be shown
-
+ 
 # Context: user@hostname (who am I and where am I)
 prompt_context() {
   local user=`whoami`
-
+ 
   if [[ "$user" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
     prompt_segment black default "%(!.%{%F{yellow}%}.)$user@%m"
   fi
 }
-
+ 
 # Git: branch/detached head, dirty status
 prompt_git() {
   local ref dirty
   if $(git rev-parse --is-inside-work-tree >/dev/null 2>&1); then
+    ZSH_THEME_GIT_PROMPT_DIRTY=' ±'
     dirty=$(parse_git_dirty)
+    
+    gstatus=$(/usr/bin/git status -uno)
+    if echo $gstatus | grep ahead &>/dev/null; then
+      rstat=" %1{⤴︎%}"
+    elif echo $gstatus | grep behind &> /dev/null; then
+      rstat=" %1{⤵︎%}"
+    elif echo $gstatus | grep diverged &> /dev/null; then
+      rstat=" %1{⤮%}"
+    else
+      rstat=""
+    fi
+
     ref=$(git symbolic-ref HEAD 2> /dev/null) || ref="➦ $(git show-ref --head -s --abbrev |head -n1 2> /dev/null)"
     if [[ -n $dirty ]]; then
       prompt_segment yellow black
@@ -85,12 +98,12 @@ prompt_git() {
     zstyle ':vcs_info:*' enable git
     zstyle ':vcs_info:*' get-revision true
     zstyle ':vcs_info:*' check-for-changes true
-    zstyle ':vcs_info:*' stagedstr '✚'
+    zstyle ':vcs_info:*' stagedstr '✢'
     zstyle ':vcs_info:git:*' unstagedstr '●'
     zstyle ':vcs_info:*' formats ' %u%c'
     zstyle ':vcs_info:*' actionformats ' %u%c'
     vcs_info
-    echo -n "${ref/refs\/heads\// }${vcs_info_msg_0_%% }"
+    echo -n "${ref/refs\/heads\//⭠ }$rstat${vcs_info_msg_0_}"
   fi
 }
 
@@ -131,7 +144,7 @@ prompt_hg() {
 
 # Dir: current working directory
 prompt_dir() {
-  prompt_segment blue black '%~'
+  prompt_segment blue black '%2~'
 }
 
 # Virtualenv: current working virtualenv
@@ -152,20 +165,18 @@ prompt_status() {
   [[ $RETVAL -ne 0 ]] && symbols+="%{%F{red}%}✘"
   [[ $UID -eq 0 ]] && symbols+="%{%F{yellow}%}⚡"
   [[ $(jobs -l | wc -l) -gt 0 ]] && symbols+="%{%F{cyan}%}⚙"
-
+ 
   [[ -n "$symbols" ]] && prompt_segment black default "$symbols"
 }
-
+ 
 ## Main prompt
 build_prompt() {
   RETVAL=$?
   prompt_status
-  prompt_virtualenv
   prompt_context
   prompt_dir
   prompt_git
-  prompt_hg
   prompt_end
 }
-
+ 
 PROMPT='%{%f%b%k%}$(build_prompt) '
