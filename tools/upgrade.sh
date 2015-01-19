@@ -1,4 +1,5 @@
 printf '\033[0;34m%s\033[0m\n' "Upgrading Oh My Zsh"
+git pull origin master
 cd "$ZSH"
 if git pull upstream master
 then
