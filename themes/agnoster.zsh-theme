@@ -124,6 +124,27 @@ prompt_git() {
   fi
 }
 
+svn_untracked() {
+}
+
+prompt_svn() {
+	local info status dirty
+	info=$(svn info 2>&1) || return 1;
+	svn_status=$(svn status 2>/dev/null)
+
+	ZSH_THEME_SVN_PROMPT_DIRTY=' ●'
+
+	if [[ -z "$svn_status" ]] ; then
+		prompt_segment green black
+	else
+		if grep "^[ADMR]" <<< $svn_status &> /dev/null; then
+			dirty=$ZSH_THEME_SVN_PROMPT_DIRTY
+		fi
+		prompt_segment yellow black
+	fi
+	echo -n "⭠ $(svn_current_branch_name $info) $(svn_current_revision $info)$dirty"
+}
+
 prompt_hg() {
   local rev status
   if $(hg id >/dev/null 2>&1); then
@@ -193,6 +214,7 @@ build_prompt() {
   prompt_context
   prompt_dir
   prompt_git
+	prompt_svn
   prompt_end
 }
 
