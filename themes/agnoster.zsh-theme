@@ -85,7 +85,7 @@ prompt_context() {
 
 # Git: branch/detached head, dirty status
 prompt_git() {
-
+  (( $+commands[git] )) || return
   local PL_BRANCH_CHAR
   () {
     local LC_ALL="" LC_CTYPE="en_US.UTF-8"
@@ -160,6 +160,28 @@ prompt_svn() {
 	echo -n "⭠ $(svn_current_branch_name $info) $(svn_current_revision $info)$dirty"
 }
 
+prompt_bzr() {
+    (( $+commands[bzr] )) || return
+    if (bzr status >/dev/null 2>&1); then
+        status_mod=`bzr status | head -n1 | grep "modified" | wc -m`
+        status_all=`bzr status | head -n1 | wc -m`
+        revision=`bzr log | head -n2 | tail -n1 | sed 's/^revno: //'`
+        if [[ $status_mod -gt 0 ]] ; then
+            prompt_segment yellow black
+            echo -n "bzr@"$revision "✚ "
+        else
+            if [[ $status_all -gt 0 ]] ; then
+                prompt_segment yellow black
+                echo -n "bzr@"$revision
+
+            else
+                prompt_segment green black
+                echo -n "bzr@"$revision
+            fi
+        fi
+    fi
+}
+
 prompt_hg() {
   (( $+commands[hg] )) || return
   local rev status
@@ -230,7 +252,9 @@ build_prompt() {
   prompt_context
   prompt_dir
   prompt_git
-	prompt_svn
+  prompt_svn
+  prompt_bzr
+  prompt_hg
   prompt_end
 }
 
