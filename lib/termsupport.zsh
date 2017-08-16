@@ -41,6 +41,19 @@ function title {
   esac
 }
 
+set_win_titles () {
+	tab_label=${PWD/${HOME}/\~} # use 'relative' path
+
+	if $(git rev-parse --is-inside-work-tree >/dev/null 2>&1); then
+		ref=$(git symbolic-ref HEAD)
+		branch=${ref/refs\/heads\//}
+		tab_label="$tab_label ($branch)"
+	fi
+
+	echo -ne "\e]2;${tab_label}\a" # set window title to full string
+	echo -ne "\e]1;${tab_label: -24}\a" # set tab title to rightmost 24 characters
+}
+
 ZSH_THEME_TERM_TAB_TITLE_IDLE="%15<..<%~%<<" #15 char left truncated PWD
 ZSH_THEME_TERM_TITLE_IDLE="%n@%m: %~"
 # Avoid duplication of directory in terminals with independent dir display

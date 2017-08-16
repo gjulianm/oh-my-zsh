@@ -43,8 +43,7 @@ CURRENT_BG='NONE'
   # This is defined using a Unicode escape sequence so it is unambiguously readable, regardless of
   # what font the user is viewing this source code in. Do not replace the
   # escape sequence with a single literal character.
-  # Do not change this! Do not make it '\u2b80'; that is the old, wrong code point.
-  SEGMENT_SEPARATOR=$'\ue0b0'
+	SEGMENT_SEPARATOR='%1{\xee\x82\xb0%}'
 }
 
 # Begin a segment
@@ -90,13 +89,26 @@ prompt_git() {
   local PL_BRANCH_CHAR
   () {
     local LC_ALL="" LC_CTYPE="en_US.UTF-8"
-    PL_BRANCH_CHAR=$'\ue0a0'         # 
+    PL_BRANCH_CHAR='\xee\x82\xa0'         # 
   }
   local ref dirty mode repo_path
   repo_path=$(git rev-parse --git-dir 2>/dev/null)
 
   if $(git rev-parse --is-inside-work-tree >/dev/null 2>&1); then
+    ZSH_THEME_GIT_PROMPT_DIRTY=' ±'
     dirty=$(parse_git_dirty)
+
+    gstatus=$(/usr/bin/git status -uno)
+    if echo $gstatus | grep ahead &>/dev/null; then
+      rstat=" %1{⤴︎%}"
+    elif echo $gstatus | grep behind &> /dev/null; then
+      rstat=" %1{⤵︎%}"
+    elif echo $gstatus | grep diverged &> /dev/null; then
+      rstat=" %1{⤮%}"
+    else
+      rstat=""
+    fi
+
     ref=$(git symbolic-ref HEAD 2> /dev/null) || ref="➦ $(git rev-parse --short HEAD 2> /dev/null)"
     if [[ -n $dirty ]]; then
       prompt_segment yellow black
@@ -118,13 +130,34 @@ prompt_git() {
     zstyle ':vcs_info:*' enable git
     zstyle ':vcs_info:*' get-revision true
     zstyle ':vcs_info:*' check-for-changes true
-    zstyle ':vcs_info:*' stagedstr '✚'
+    zstyle ':vcs_info:*' stagedstr '✢'
     zstyle ':vcs_info:*' unstagedstr '●'
     zstyle ':vcs_info:*' formats ' %u%c'
     zstyle ':vcs_info:*' actionformats ' %u%c'
     vcs_info
-    echo -n "${ref/refs\/heads\//$PL_BRANCH_CHAR }${vcs_info_msg_0_%% }${mode}"
+    echo -n "${ref/refs\/heads\//$PL_BRANCH_CHAR }${rstat}${vcs_info_msg_0_%% }${mode}"
   fi
+}
+
+svn_untracked() {
+}
+
+prompt_svn() {
+	local info status dirty
+	info=$(svn info 2>&1) || return 1;
+	svn_status=$(svn status 2>/dev/null)
+
+	ZSH_THEME_SVN_PROMPT_DIRTY=' ●'
+
+	if [[ -z "$svn_status" ]] ; then
+		prompt_segment green black
+	else
+		if grep "^[ADMR]" <<< $svn_status &> /dev/null; then
+			dirty=$ZSH_THEME_SVN_PROMPT_DIRTY
+		fi
+		prompt_segment yellow black
+	fi
+	echo -n "⭠ $(svn_current_branch_name $info) $(svn_current_revision $info)$dirty"
 }
 
 prompt_bzr() {
@@ -187,7 +220,7 @@ prompt_hg() {
 
 # Dir: current working directory
 prompt_dir() {
-  prompt_segment blue black '%~'
+  prompt_segment blue black '%2~'
 }
 
 # Virtualenv: current working virtualenv
@@ -219,6 +252,7 @@ build_prompt() {
   prompt_context
   prompt_dir
   prompt_git
+  prompt_svn
   prompt_bzr
   prompt_hg
   prompt_end
