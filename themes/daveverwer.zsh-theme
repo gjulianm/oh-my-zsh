@@ -5,3 +5,7 @@ PROMPT='%{$fg[red]%}%m%{$reset_color%}:%{$fg[green]%}%c%{$reset_color%}$(git_pro
 
 ZSH_THEME_GIT_PROMPT_PREFIX=" %{$fg[blue]%}("
 ZSH_THEME_GIT_PROMPT_SUFFIX=")%{$reset_color%}"
+
+export VIRTUAL_ENV_DISABLE_PROMPT=1
+
+RPROMPT='$(virtualenv_prompt_info)'
