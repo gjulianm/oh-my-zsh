@@ -231,7 +231,8 @@ prompt_hg() {
 
 # Dir: current working directory
 prompt_dir() {
-  prompt_segment blue $CURRENT_FG '%~'
+	# The 2~ means take only the last two components of the path
+  prompt_segment blue $CURRENT_FG '%2~'
 }
 
 # Virtualenv: current working virtualenv
